@@ -13,7 +13,7 @@ import numpy as np
 
 """Main function of the simulation"""
 
-def mptcpNet(delay1, delay2, delayRatio):
+def mptcpNet(delay1, delay2, capacity1, capacity2):
 
     call(["sudo", "sysctl", "-w", "net.mptcp.mptcp_enabled=1"])
     call(["sudo", "modprobe", "mptcp_coupled"])
@@ -21,6 +21,11 @@ def mptcpNet(delay1, delay2, delayRatio):
     call(["sudo", "sysctl", "-w", "net.ipv4.tcp_congestion_control=lia"])
 
     net = Mininet(controller=None, accessPoint=OVSKernelAP, link=TCLink, autoSetMacs=True)
+
+    d1 = str(delay1)+'ms'
+    d2 = str(delay2)+'ms'
+    cap1 = float(capacity1)
+    cap2 = float(capacity2)
 
     print "*** Creating nodes ***"
     '''Host : One host serves as a server'''
@@ -44,12 +49,12 @@ def mptcpNet(delay1, delay2, delayRatio):
     print "*** Associating and Creating links ***"
     '''Backhaul links between switches'''
     net.addLink(h1, s3)
-    net.addLink(s3, s1, bw=5)
-    net.addLink(s3, s2, bw=5)
+    net.addLink(s3, s1, bw=cap1)
+    net.addLink(s3, s2, bw=cap2)
 
     '''Links between stations and LTE switch'''
-    net.addLink(sta1, s1, bw=5, delay=delay1)
-    net.addLink(sta1, s2, bw=5, delay=delay2)
+    net.addLink(sta1, s1, bw=cap1, delay=d1)
+    net.addLink(sta1, s2, bw=cap2, delay=d2)
 
     print "*** Starting network simulation ***"
     net.start()
@@ -70,8 +75,8 @@ def mptcpNet(delay1, delay2, delayRatio):
     sta1.cmdPrint('ip route add 10.0.1.2/32 dev sta1-wlan0 scope link table 3')
     sta1.cmdPrint('ip route add default via 10.0.1.2 dev sta1-wlan0 table 3')
 
-
     call(["sudo", "bash", "flowTable.sh"])
+
     # for i in MPStaSet:
     #     sta_name = 'sta'+str(i)
     #     station = nodes[sta_name]
@@ -111,7 +116,7 @@ def mptcpNet(delay1, delay2, delayRatio):
 
     print "*** Starting to generate the traffic ***"
     info('Starting iPerf3 server...\n')
-    folderName = delay1+'-'+delay2
+    folderName = 'bs'
     h1.cmdPrint('iperf3 -s &')
     # h1.cmdPrint('PID=$!')
     if not os.path.exists(folderName):
@@ -171,15 +176,22 @@ def mptcpNet(delay1, delay2, delayRatio):
     # o.write(str(throughput) + "\n" + str(delay))
     # o.close()
 
-    r = open('data/x.stat','a')
-    r1 = open('data/throughput-delaydiff.stat','a')
-    r2 = open('data/delay-delaydiff.stat','a')
-    r.write(','+str(delayRatio))
-    r1.write(','+str(throughput))
-    r2.write(','+str(delay))
+    r = open('reg-data/x-y.stat','a')
+    r1 = open('reg-data/throughput.stat','a')
+    r2 = open('reg-data/delay.stat','a')
+    r3 = open('reg-data/throughput-ratio.stat', 'a')
+    x_y = [float(delay2/delay1), float(capacity2/capacity1)]
+    r.write(','.join(str(i) for i in x_y))
+    r.write('\n')
+    r1.write(str(throughput)+',')
+    r2.write(str(delay)+',')
+    if capacity2>=capacity1:
+        ratio = float(throughput/10**6)/capacity2
+    r3.write(str(ratio)+',')
     r.close()
     r1.close()
     r2.close()
+    r3.close()
 
     os.system('rm -rf '+folderName)
 
@@ -189,11 +201,16 @@ def mptcpNet(delay1, delay2, delayRatio):
 
 if __name__ == '__main__':
     setLogLevel('info')
-    delay = list(np.arange(84,1000,1))
+    delay = list(np.arange(1,500,1))
     print delay
-    delay1 = '1ms'
+    delay1 = 1
+
+    capacity = [0.1, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+    capacity1 = 1.0
+
     for i in delay:
-        delay2 = str(i)+'ms'
-        for j in range(1, 6):
-            mptcpNet(delay1, delay2, i)
+        delay2 = int(i)
+        for j in capacity:
+            capacity2 = float(j)
+            mptcpNet(delay1, delay2, capacity1, capacity2)
     # mptcpNet('1ms', '1ms')
