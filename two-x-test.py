@@ -152,9 +152,9 @@ def mptcpNet(delay1, delay2, capacity1, capacity2):
             l = line.strip().strip('|').split()
             if '<>' in l:
                 duration = float(l[2])
-                byte += float(l[8])
-                throughput += float(l[8]) * 8 / duration
-                delay += float(l[8]) * float(l[10])
+                byte += float(l[4])
+                throughput += float(l[4]) * 8 / duration
+                delay += float(l[6]) * float(l[4])
     f.close()
     out_f = folderName + '/sta1-eht2.stat'
     h1.cmd('sudo tshark -r ' + folderName + '/sta1-eth2.pcap -qz \"io,stat,0,BYTES()ip.src==10.0.1.1,AVG(tcp.analysis.ack_rtt)tcp.analysis.ack_rtt&&ip.addr==10.0.1.1\" >' + out_f)
@@ -164,9 +164,9 @@ def mptcpNet(delay1, delay2, capacity1, capacity2):
             l = line.strip().strip('|').split()
             if '<>' in l:
                 duration = float(l[2])
-                byte += float(l[8])
-                throughput += float(l[8]) * 8 / duration
-                delay += float(l[8]) * float(l[10])
+                byte += float(l[4])
+                throughput += float(l[4]) * 8 / duration
+                delay += float(l[6]) * float(l[4])
     f.close()
     delay /= byte
     # throughput_l.append(str(throughput))
@@ -187,6 +187,8 @@ def mptcpNet(delay1, delay2, capacity1, capacity2):
     r2.write(str(delay)+',')
     if capacity2>=capacity1:
         ratio = float(throughput/10**6)/capacity2
+    else:
+    	ratio = float(throughput/10**6)/capacity1
     r3.write(str(ratio)+',')
     r.close()
     r1.close()
@@ -201,7 +203,7 @@ def mptcpNet(delay1, delay2, capacity1, capacity2):
 
 if __name__ == '__main__':
     setLogLevel('info')
-    delay = list(np.arange(1,500,1))
+    delay = list(np.arange(500,750,1))
     print delay
     delay1 = 1
 
