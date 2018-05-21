@@ -203,7 +203,7 @@ def mptcpNet(delay1, delay2, capacity1, capacity2):
 
 if __name__ == '__main__':
     setLogLevel('info')
-    delay = list(np.arange(500,750,1))
+    delay = list(np.arange(547,750,1))
     print delay
     delay1 = 1
 
@@ -215,4 +215,5 @@ if __name__ == '__main__':
         for j in capacity:
             capacity2 = float(j)
             mptcpNet(delay1, delay2, capacity1, capacity2)
+            os.system('sudo mn -c')
     # mptcpNet('1ms', '1ms')
